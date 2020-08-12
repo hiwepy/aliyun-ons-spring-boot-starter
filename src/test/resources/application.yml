@@ -1,0 +1,7 @@
+aliyun:
+  ons:
+    enpoint: hz.aliyuncs.com
+    namespace: test
+    access-key: test
+    secret-key: test
+    group: DEFAULT
