@@ -2,7 +2,7 @@
 
 #### 组件简介
 
- > 基于 ons-client 实现的 Spring Boot Starter 实现
+ > 基于 ons-client 实现的 Spring Boot Starter 实现，依赖少，使用简单
 
 #### 使用说明
 
