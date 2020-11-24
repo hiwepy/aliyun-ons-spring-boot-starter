@@ -187,6 +187,26 @@ public class AliyunOnsMqProperties {
 
 		return properties;
 	}
+	
+	public Properties toConsumerProperties() {
+
+		Properties properties = new Properties();
+		// AccessKey 阿里云身份验证，在阿里云服务器管理控制台创建
+		properties.put(PropertyKeyConst.AccessKey, this.accessKey);
+		// SecretKey 阿里云身份验证，在阿里云服务器管理控制台创建
+		properties.put(PropertyKeyConst.SecretKey, this.secretKey);
+		// 设置 TCP 接入域名（此处以公共云生产环境为例）
+		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
+		
+		properties.put(PropertyKeyConst.GROUP_ID, this.groupId);
+
+		// 设置发送超时时间，单位毫秒
+		if (sendMsgTimeoutMillis > 0) {
+			properties.put(PropertyKeyConst.SendMsgTimeoutMillis, this.sendMsgTimeoutMillis);
+		}
+
+		return properties;
+	}
 
 	public String getAccessKey() {
 		return accessKey;
