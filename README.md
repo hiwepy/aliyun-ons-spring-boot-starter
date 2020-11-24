@@ -24,11 +24,11 @@
 #################################################################################################
 aliyun:
   ons:
-    enpoint: hz.aliyuncs.com
-    namespace: test
     access-key: test
     secret-key: test
-    group: DEFAULT
+    name-srv-addr: http://zzzz.mq-internet-access.mq-internet.aliyuncs.com
+    message-model: CLUSTERING    
+    group-id: DEFAULT
 ```
 
 ##### 3、使用示例

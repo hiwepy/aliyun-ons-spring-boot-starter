@@ -26,7 +26,7 @@ public class AliyunOnsMqProperties {
 	/**
 	 * Group ID，客户端ID
 	 */
-	private String groupId;
+	private String groupId = "DEFAULT";
 	/**
 	 * 消息发送超时时间，如果服务端在配置的对应时间内未ACK，则发送客户端认为该消息发送失败。
 	 */
