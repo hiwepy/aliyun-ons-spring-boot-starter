@@ -48,9 +48,8 @@ public class AliyunOnsAutoConfiguration {
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean
     public ConsumerBean consumerBean(AliyunOnsMqProperties onsMqProperties, AliyunOnsMqTemplate aliyunOnsMqTemplate) {
-        Properties properties = onsMqProperties.toConsumerProperties();
         ConsumerBean consumerBean = new ConsumerBean();
-        consumerBean.setProperties(properties);
+        consumerBean.setProperties(onsMqProperties.toConsumerProperties());
         Map<Subscription, MessageListener> subscriptionTable = aliyunOnsMqTemplate.getSubscriptionTable();
         consumerBean.setSubscriptionTable(subscriptionTable);
         consumerBean.start();
@@ -60,9 +59,8 @@ public class AliyunOnsAutoConfiguration {
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean
     public OrderConsumerBean orderConsumerBean(AliyunOnsMqProperties onsMqProperties, AliyunOnsMqTemplate aliyunOnsMqTemplate) {
-        Properties properties = onsMqProperties.toConsumerProperties();
         OrderConsumerBean consumerBean = new OrderConsumerBean();
-        consumerBean.setProperties(properties);
+        consumerBean.setProperties(onsMqProperties.toConsumerProperties());
         Map<Subscription, MessageOrderListener> subscriptionTable = aliyunOnsMqTemplate.getOrderSubscriptionTable();
         consumerBean.setSubscriptionTable(subscriptionTable);
         consumerBean.start();

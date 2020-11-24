@@ -1,9 +1,12 @@
 package com.aliyun.openservices.spring.boot;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +15,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import com.aliyun.openservices.ons.api.Message;
 import com.aliyun.openservices.ons.api.MessageListener;
@@ -58,30 +62,32 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			String[] messageConsumerBeans = getApplicationContext().getBeanNamesForAnnotation(MessageConsumer.class);
 			Map<Subscription, MessageListener> subscriptionTable = new HashMap<>(messageConsumerBeans.length);
 			Subscription subscription;
+			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
 				
-				if (!Arrays.asList(arg).contains(beanName)) {
-					continue;
+				// 没有指定具体名称或在指定名称内
+				if ( CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
+					
+					Class<?> clazz = applicationContext.getType(beanName);
+					MessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, MessageConsumer.class);
+
+					// 绑定监听的topic
+					subscription = new Subscription();
+					subscription.setTopic(messageConsumer.topic());
+					// 绑定要监听的tag，多个tag用 || 隔开
+					subscription.setExpression(messageConsumer.tag());
+
+					subscriptionTable.put(subscription, (MessageListener) applicationContext.getBean(beanName));
+					log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
+
 				}
-
-				Class<?> clazz = applicationContext.getType(beanName);
-				MessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, MessageConsumer.class);
-
-				// 绑定监听的topic
-				subscription = new Subscription();
-				subscription.setTopic(messageConsumer.topic());
-				// 绑定要监听的tag，多个tag用 || 隔开
-				subscription.setExpression(messageConsumer.tag());
-
-				subscriptionTable.put(subscription, (MessageListener) applicationContext.getBean(beanName));
-				log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
-
+				
 			}
 			return subscriptionTable;
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
-		return null;
+		return new HashMap<Subscription, MessageListener>();
 	}
 
 	/*
@@ -90,33 +96,37 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	 */
 	public Map<Subscription, MessageOrderListener> getOrderSubscriptionTable(String... arg) throws BeansException {
 		try {
-			String[] messageConsumerBeans = getApplicationContext()
-					.getBeanNamesForAnnotation(MessageOrderConsumer.class);
+			
+			String[] messageConsumerBeans = getApplicationContext().getBeanNamesForAnnotation(MessageOrderConsumer.class);
 			Map<Subscription, MessageOrderListener> subscriptionTable = new HashMap<>(messageConsumerBeans.length);
 			Subscription subscription;
+			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
-				if (!Arrays.asList(arg).contains(beanName)) {
-					continue;
+				
+				// 没有指定具体名称或在指定名称内
+				if (CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
+					
+					Class<?> clazz = applicationContext.getType(beanName);
+					MessageOrderConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz,
+							MessageOrderConsumer.class);
+
+					// 绑定监听的topic
+					subscription = new Subscription();
+					subscription.setTopic(messageConsumer.topic());
+					// 绑定要监听的tag，多个tag用 || 隔开
+					subscription.setExpression(messageConsumer.tag());
+
+					subscriptionTable.put(subscription, (MessageOrderListener) applicationContext.getBean(beanName));
+					log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
+					
 				}
-				Class<?> clazz = applicationContext.getType(beanName);
-				MessageOrderConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz,
-						MessageOrderConsumer.class);
-
-				// 绑定监听的topic
-				subscription = new Subscription();
-				subscription.setTopic(messageConsumer.topic());
-				// 绑定要监听的tag，多个tag用 || 隔开
-				subscription.setExpression(messageConsumer.tag());
-
-				subscriptionTable.put(subscription, (MessageOrderListener) applicationContext.getBean(beanName));
-				log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
 
 			}
 			return subscriptionTable;
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
-		return null;
+		return new HashMap<Subscription, MessageOrderListener>();
 	}
 
 	/*
