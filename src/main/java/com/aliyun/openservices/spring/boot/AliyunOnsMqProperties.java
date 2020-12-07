@@ -9,7 +9,10 @@ import com.aliyun.openservices.ons.api.PropertyKeyConst;
 @ConfigurationProperties(prefix = AliyunOnsMqProperties.PREFIX)
 public class AliyunOnsMqProperties {
 
-	public static final String PREFIX = "aliyun.ons";
+	/**
+     * The prefix of the property of {@link AliyunOnsMqProperties}.
+     */
+    public static final String PREFIX = "alibaba.cloud.ons";
 
 	/**
 	 * AccessKey, 用于标识、校验用户身份
