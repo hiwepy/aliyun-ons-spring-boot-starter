@@ -22,13 +22,14 @@
 #################################################################################################
 ### 阿里云Ons配置：
 #################################################################################################
-aliyun:
-  ons:
-    access-key: test
-    secret-key: test
-    name-srv-addr: http://zzzz.mq-internet-access.mq-internet.aliyuncs.com
-    message-model: CLUSTERING    
-    group-id: DEFAULT
+alibaba:
+  cloud:
+    ons:
+      access-key: test
+      secret-key: test
+      name-srv-addr: http://zzzz.mq-internet-access.mq-internet.aliyuncs.com
+      message-model: CLUSTERING    
+      group-id: DEFAULT
 ```
 
 ##### 3、使用示例
