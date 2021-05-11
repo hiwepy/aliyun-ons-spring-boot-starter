@@ -3,6 +3,7 @@ package com.aliyun.openservices.spring.boot;
 import java.util.Properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 import com.aliyun.openservices.ons.api.PropertyKeyConst;
 
@@ -171,13 +172,15 @@ public class AliyunOnsMqProperties {
 	 */
 	private long maxBatchMessageCount = 1;
 
-	public Properties toProperties() {
-
+	public Properties toProperties(AliyunProperties onsProperties) {
+		
 		Properties properties = new Properties();
 		// AccessKey 阿里云身份验证，在阿里云服务器管理控制台创建
-		properties.put(PropertyKeyConst.AccessKey, this.accessKey);
+		String accessKey = StringUtils.hasText(onsProperties.getAccessKey()) ? onsProperties.getAccessKey() : this.getAccessKey();
+		properties.put(PropertyKeyConst.AccessKey, accessKey);
 		// SecretKey 阿里云身份验证，在阿里云服务器管理控制台创建
-		properties.put(PropertyKeyConst.SecretKey, this.secretKey);
+		String secretKey = StringUtils.hasText(onsProperties.getSecretKey()) ? onsProperties.getSecretKey() : this.getSecretKey();
+		properties.put(PropertyKeyConst.SecretKey, secretKey);
 		// 设置 TCP 接入域名（此处以公共云生产环境为例）
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
 		// properties.put(PropertyKeyConst.GROUP_ID,
