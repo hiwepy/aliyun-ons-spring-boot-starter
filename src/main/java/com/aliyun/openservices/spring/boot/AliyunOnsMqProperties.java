@@ -194,13 +194,15 @@ public class AliyunOnsMqProperties {
 		return properties;
 	}
 	
-	public Properties toConsumerProperties() {
+	public Properties toConsumerProperties(AliyunProperties onsProperties) {
 
 		Properties properties = new Properties();
 		// AccessKey 阿里云身份验证，在阿里云服务器管理控制台创建
-		properties.put(PropertyKeyConst.AccessKey, this.accessKey);
+		String accessKey = StringUtils.hasText(this.getAccessKey()) ? this.getAccessKey() : onsProperties.getAccessKey();
+		properties.put(PropertyKeyConst.AccessKey, accessKey);
 		// SecretKey 阿里云身份验证，在阿里云服务器管理控制台创建
-		properties.put(PropertyKeyConst.SecretKey, this.secretKey);
+		String secretKey = StringUtils.hasText(this.getSecretKey()) ? this.getSecretKey() : onsProperties.getSecretKey();
+		properties.put(PropertyKeyConst.SecretKey, secretKey);
 		// 设置 TCP 接入域名（此处以公共云生产环境为例）
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
 		
