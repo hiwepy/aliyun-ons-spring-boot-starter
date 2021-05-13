@@ -183,8 +183,6 @@ public class AliyunOnsMqProperties {
 		properties.put(PropertyKeyConst.SecretKey, secretKey);
 		// 设置 TCP 接入域名（此处以公共云生产环境为例）
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
-		// properties.put(PropertyKeyConst.GROUP_ID,
-		// this.getConfig().getProperty(PropertyKeyConst.GROUP_ID));
 
 		// 设置发送超时时间，单位毫秒
 		if (sendMsgTimeoutMillis > 0) {
@@ -205,7 +203,7 @@ public class AliyunOnsMqProperties {
 		properties.put(PropertyKeyConst.SecretKey, secretKey);
 		// 设置 TCP 接入域名（此处以公共云生产环境为例）
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
-		
+		// 设置 默认分组
 		properties.put(PropertyKeyConst.GROUP_ID, this.groupId);
 
 		// 设置发送超时时间，单位毫秒
