@@ -7,6 +7,24 @@ import org.springframework.util.StringUtils;
 
 import com.aliyun.openservices.ons.api.PropertyKeyConst;
 
+/**
+ * ons配置参数
+ * a参考：https://help.aliyun.com/document_detail/93574.html?spm=a2c4g.11186623.6.553.927d650eeh6vzK
+ * <p>
+ * AccessKey	                String	-	        您在阿里云账号管理控制台中创建的 AccessKeyId，用于身份认证。
+ * SecretKey	                String	-	        您在阿里云账号管理控制台中创建的 AccessKeySecret，用于身份认证。
+ * OnsChannel	                String	ALIYUN 用户渠道，阿里云：ALIYUN，聚石塔用户为：CLOUD。
+ * NAMESRV_ADDR	                String	-	        设置 TCP 协议接入点。
+ * GROUP_ID	                    String	-	        Consumer 实例的唯一 ID，您在控制台创建的 Group ID。
+ * MessageModel	                String	CLUSTERING	设置 Consumer 实例的消费模式，集群消费：CLUSTERING，广播消费：BROADCASTING。
+ * ConsumeThreadNums	        String	64	        消费线程数量。
+ * MaxReconsumeTimes	        String	16	        设置消息消费失败的最大重试次数。
+ * ConsumeTimeout	            String	15	        设置每条消息消费的最大超时时间，超过设置时间则被视为消费失败，等下次重新投递再次消费。每个业务需要设置一个合理的值，单位：分钟（min）。
+ * ConsumeMessageBatchMaxSize	String	1	        BatchConsumer每次批量消费的最大消息数量，默认值为1，允许自定义范围为[1, 32]，实际消费数量可能小于该值。
+ * CheckImmunityTimeInSeconds	String	30	        设置事务消息第一次回查的最快时间，单位：秒（s）。
+ * suspendTimeMillis	        String	3000        只适用于顺序消息，设置消息消费失败的重试间隔时间，单位：毫秒（ms）。
+ * </p>
+ */
 @ConfigurationProperties(prefix = AliyunOnsMqProperties.PREFIX)
 public class AliyunOnsMqProperties {
 
@@ -73,7 +91,7 @@ public class AliyunOnsMqProperties {
 	/**
 	 * 消息消费失败时的最大重试次数。如果消息消费次数超过，还未成功，则将该消息转移到一个失败队列，等待被删除。
 	 */
-	private int maxReconsumeTimes = -1;
+	private int maxReconsumeTimes = 16;
 
 	/**
 	 * 设置每条消息消费的最大超时时间,超过这个时间,这条消息将会被视为消费失败,等下次重新投递再次消费. 每个业务需要设置一个合理的值.
@@ -183,7 +201,6 @@ public class AliyunOnsMqProperties {
 		properties.put(PropertyKeyConst.SecretKey, secretKey);
 		// 设置 TCP 接入域名（此处以公共云生产环境为例）
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
-
 		// 设置发送超时时间，单位毫秒
 		if (sendMsgTimeoutMillis > 0) {
 			properties.put(PropertyKeyConst.SendMsgTimeoutMillis, this.sendMsgTimeoutMillis);
@@ -205,12 +222,13 @@ public class AliyunOnsMqProperties {
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
 		// 设置 默认分组
 		properties.put(PropertyKeyConst.GROUP_ID, this.groupId);
-
+		// 默认重试次数
+        properties.put(PropertyKeyConst.MaxReconsumeTimes, this.maxReconsumeTimes);
 		// 设置发送超时时间，单位毫秒
 		if (sendMsgTimeoutMillis > 0) {
 			properties.put(PropertyKeyConst.SendMsgTimeoutMillis, this.sendMsgTimeoutMillis);
 		}
-
+		
 		return properties;
 	}
 
