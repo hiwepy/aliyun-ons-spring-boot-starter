@@ -58,17 +58,9 @@ public class AliyunOnsMqProperties {
 	 */
 	private String groupId = "DEFAULT";
 	/**
-	 * 消息发送超时时间，如果服务端在配置的对应时间内未ACK，则发送客户端认为该消息发送失败。
-	 */
-	private long sendMsgTimeoutMillis = -1;
-	/**
 	 * 消费模式，包括集群模式、广播模式
 	 */
 	private String messageModel = "CLUSTERING";
-	/**
-	 * 消息队列服务接入点
-	 */
-	private String onsAddr;
 	/**
 	 * Name Server地址
 	 */
@@ -76,12 +68,7 @@ public class AliyunOnsMqProperties {
 	/**
 	 * 设置客户端接入来源，默认ALIYUN
 	 */
-	private String channel = "ALIYUN";
-	/**
-	 * 消息类型，可配置为NOTIFY、METAQ
-	 */
-	private String mqType;
-
+	private String onsChannel = "ALIYUN";
 	/**
 	 * 是否启动vip channel
 	 */
@@ -104,6 +91,11 @@ public class AliyunOnsMqProperties {
      * If topic route not found when sending message, whether use the default topic route.
      */
     private boolean useDefaultTopicIfNotFound = true;
+
+	/**
+	 * 消息发送超时时间，如果服务端在配置的对应时间内未ACK，则发送客户端认为该消息发送失败。
+	 */
+	private long sendMsgTimeoutMillis = -1;
 	
 	// -------consumer------------------------------------------ 
 
@@ -116,35 +108,12 @@ public class AliyunOnsMqProperties {
 	 * 消费线程数量
 	 */
 	private Integer consumeThreadNums;
-
-    
     
     /**
      * Batch consumption size
      * BatchConsumer每次批量消费的最大消息数量, 默认值为1, 允许自定义范围为[1, 32], 实际消费数量可能小于该值.
      */
     private int consumeMessageBatchMaxSize = 1;
-
-    /**
-     * Maximum amount of time in milliseconds to wait before group-consume
-     */
-    private long maxBatchConsumeWaitTime = 0;
-
-    /**
-     * Batch pull size
-     */
-    private int pullBatchSize = 32;
-
-    /**
-     * Whether update subscription relationship when every pull
-     * eg:是否每次请求都带上最新的订阅关系，默认false
-     */
-    private boolean postSubscriptionWhenPull = false;
-
-    /**
-     * Whether the unit of subscription group
-     */
-    private boolean unitMode = false;
 
     /**
      * Max re-consume times. -1 means 16 times.
@@ -214,6 +183,7 @@ public class AliyunOnsMqProperties {
 		// 设置 TCP 接入域名（此处以公共云生产环境为例）
 		properties.put(PropertyKeyConst.NAMESRV_ADDR, this.nameSrvAddr);
         properties.put(PropertyKeyConst.isVipChannelEnabled, this.isVipChannelEnabled);
+        properties.put(PropertyKeyConst.OnsChannel, this.onsChannel);
         properties.put(PropertyKeyConst.EXACTLYONCE_DELIVERY, this.addExtendUniqInfo);
 		
 		if(Objects.nonNull(this.instanceName)) {
