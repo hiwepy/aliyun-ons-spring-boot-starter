@@ -6,9 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -147,43 +145,25 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			// 1、查找上下文中被MessageOrderConsumer注解标注的对象名称
 			String[] messageConsumerBeans = getApplicationContext().getBeanNamesForAnnotation(MessageConsumer.class);
 			// 2、筛选出指定的对象上名称以及对象上的注解，并构建Map对象
-			List<OnsConsumer> consumerList = new ArrayList<>();
+			Map<Subscription, MessageListener> subscriptionTable = new HashMap<>();
 			Stream.of(beanNames).filter(beanName -> {
 				return Arrays.binarySearch(messageConsumerBeans, beanName) > -1;
 			}).forEach(beanName -> {
+				
+				// 2.1、查找bean类型和class上的注解
 				Class<?> clazz = applicationContext.getType(beanName);
 				MessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz,
 						MessageConsumer.class);
-				consumerList.add(OnsConsumer.builder()
-						.beanName(beanName)
-						.topic(messageConsumer.topic())
-						.tag(messageConsumer.tag())
-						.build());
+				// 2.2、绑定监听的topic
+				Subscription subscription = new Subscription();
+				subscription.setTopic(messageConsumer.topic());
+				// 2.3、绑定要监听的tag，多个tag用 || 隔开
+				subscription.setExpression(messageConsumer.tag());
+
+				subscriptionTable.put(subscription, (MessageListener) applicationContext.getBean(beanName));
+				log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
+				 
 			});
-			// 3、按主题进行分组
-			Map<String, List<OnsConsumer>> consumerTable = consumerList.stream().collect(Collectors.groupingBy(OnsConsumer::getTopic));
-			// 4、按分组进行订阅
-			Map<Subscription, MessageListener> subscriptionTable = new HashMap<>();
-			for (Entry<String, List<OnsConsumer>> consumerEntry : consumerTable.entrySet()) {
-				
-				// 4.1、组织订阅集合
-				consumerEntry.getValue().stream().map(item -> item.getBeanName()).distinct().forEach(beanName -> {
-					
-					// 4.2、绑定监听的topic
-					Subscription subscription = new Subscription();
-					subscription.setTopic(consumerEntry.getKey());
-					// 4.3、绑定要监听的tag，多个tag用 || 隔开
-					subscription.setExpression(consumerEntry.getValue().stream()
-									.filter(item -> beanName.equals(item.getBeanName()))
-									.map(item -> item.getTag())
-									.distinct()
-									.collect(Collectors.joining(DELIMITER)));
-					
-					subscriptionTable.put(subscription, (MessageListener) applicationContext.getBean(beanName));
-					log.info("Topic[{}] and tag[{}] subscribed!", consumerEntry.getKey(), subscription.getExpression());
-					
-				});
-			}
 			return subscriptionTable;
 		} catch (Exception e) {
 			log.error(e.getMessage());
@@ -202,51 +182,30 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			// 1、查找上下文中被MessageOrderConsumer注解标注的对象名称
 			String[] messageConsumerBeans = getApplicationContext().getBeanNamesForAnnotation(MessageOrderConsumer.class);
 			// 2、筛选出指定的对象上名称以及对象上的注解，并构建Map对象
-			List<OnsConsumer> consumerList = new ArrayList<>();
+			Map<Subscription, MessageOrderListener> subscriptionTable = new HashMap<>();
 			Stream.of(beanNames).filter(beanName -> {
 				return Arrays.binarySearch(messageConsumerBeans, beanName) > -1;
 			}).forEach(beanName -> {
+				// 2.1、查找bean类型和class上的注解
 				Class<?> clazz = applicationContext.getType(beanName);
 				MessageOrderConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz,
 						MessageOrderConsumer.class);
-				consumerList.add(OnsConsumer.builder()
-						.beanName(beanName)
-						.topic(messageConsumer.topic())
-						.tag(messageConsumer.tag())
-						.build());
-			});
-			// 3、按主题进行分组
-			Map<String, List<OnsConsumer>> consumerTable = consumerList.stream().collect(Collectors.groupingBy(OnsConsumer::getTopic));
-			// 4、按分组进行订阅
-			Map<Subscription, MessageOrderListener> subscriptionTable = new HashMap<>();
-			for (Entry<String, List<OnsConsumer>> consumerEntry : consumerTable.entrySet()) {
+				// 2.2、绑定监听的topic
+				Subscription subscription = new Subscription();
+				subscription.setTopic(messageConsumer.topic());
+				// 2.3、绑定要监听的tag，多个tag用 || 隔开
+				subscription.setExpression(messageConsumer.tag());
 				
-				// 4.1、组织订阅集合
-				consumerEntry.getValue().stream().map(item -> item.getBeanName()).distinct().forEach(beanName -> {
-					
-					// 4.2、绑定监听的topic
-					Subscription subscription = new Subscription();
-					subscription.setTopic(consumerEntry.getKey());
-					// 4.3、绑定要监听的tag，多个tag用 || 隔开
-					subscription.setExpression(consumerEntry.getValue().stream()
-							.filter(item -> beanName.equals(item.getBeanName()))
-							.map(item -> item.getTag())
-							.distinct()
-							.collect(Collectors.joining(DELIMITER)));
-					
-					subscriptionTable.put(subscription, (MessageOrderListener) applicationContext.getBean(beanName));
-					log.info("Topic[{}] and tag[{}] subscribed!", consumerEntry.getKey(), subscription.getExpression());
-					
-				});
-			}
-			
+				subscriptionTable.put(subscription, (MessageOrderListener) applicationContext.getBean(beanName));
+				log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
+			});
 			return subscriptionTable;
 		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
 		return new HashMap<Subscription, MessageOrderListener>();
 	}
-
+	
 	/*
 	 * 单条发送顺序消息
 	 * 
