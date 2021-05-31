@@ -91,8 +91,11 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 					Subscription subscription = new Subscription();
 					subscription.setTopic(consumerEntry.getKey());
 					// 4.3、绑定要监听的tag，多个tag用 || 隔开
-					subscription.setExpression(consumerEntry.getValue().stream().map(item -> item.getTag()).distinct()
-							.collect(Collectors.joining(DELIMITER)));
+					subscription.setExpression(consumerEntry.getValue().stream()
+									.filter(item -> beanName.equals(item.getBeanName()))
+									.map(item -> item.getTag())
+									.distinct()
+									.collect(Collectors.joining(DELIMITER)));
 					
 					subscriptionTable.put(subscription, (MessageListener) applicationContext.getBean(beanName));
 					log.info("Topic[{}] and tag[{}] subscribed!", consumerEntry.getKey(), subscription.getExpression());
@@ -143,7 +146,10 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 					Subscription subscription = new Subscription();
 					subscription.setTopic(consumerEntry.getKey());
 					// 4.3、绑定要监听的tag，多个tag用 || 隔开
-					subscription.setExpression(consumerEntry.getValue().stream().map(item -> item.getTag()).distinct()
+					subscription.setExpression(consumerEntry.getValue().stream()
+							.filter(item -> beanName.equals(item.getBeanName()))
+							.map(item -> item.getTag())
+							.distinct()
 							.collect(Collectors.joining(DELIMITER)));
 					
 					subscriptionTable.put(subscription, (MessageOrderListener) applicationContext.getBean(beanName));
