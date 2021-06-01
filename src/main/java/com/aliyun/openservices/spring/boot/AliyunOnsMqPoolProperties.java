@@ -12,7 +12,6 @@ import lombok.Data;
  * maximumPoolSize 线程池中允许的最大线程数量
  * keepAliveTime   当线程数大于核心时，此为终止前多余的空闲线程等待新任务的最长时间
  * unit            keepAliveTime 的时间单位
- * </p>
  */
 @ConfigurationProperties(prefix = AliyunOnsMqPoolProperties.PREFIX)
 @Data
