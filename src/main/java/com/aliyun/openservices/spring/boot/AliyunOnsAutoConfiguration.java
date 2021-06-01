@@ -21,7 +21,7 @@ import com.aliyun.openservices.ons.api.order.OrderProducer;
 
 @Configuration
 @ConditionalOnClass({ ONSFactory.class })
-@EnableConfigurationProperties({ AliyunProperties.class, AliyunOnsMqProperties.class})
+@EnableConfigurationProperties({ AliyunProperties.class, AliyunOnsMqProperties.class, AliyunOnsMqPoolProperties.class})
 public class AliyunOnsAutoConfiguration {
 
 	@Bean(destroyMethod = "shutdown")
@@ -65,8 +65,8 @@ public class AliyunOnsAutoConfiguration {
     }
     
 	@Bean
-	public AliyunOnsMqTemplate aliyunOnsMqTemplate() {
-		return new AliyunOnsMqTemplate();
+	public AliyunOnsMqTemplate aliyunOnsMqTemplate(AliyunOnsMqPoolProperties poolProperties) {
+		return new AliyunOnsMqTemplate(poolProperties);
 	}
 	
 }
