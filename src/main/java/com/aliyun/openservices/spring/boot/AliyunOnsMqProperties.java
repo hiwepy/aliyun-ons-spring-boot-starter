@@ -13,7 +13,6 @@ import lombok.Data;
 /**
  * ons配置参数
  * a参考：https://help.aliyun.com/document_detail/93574.html?spm=a2c4g.11186623.6.553.927d650eeh6vzK
- * <p>
  * AccessKey	                String	-	        您在阿里云账号管理控制台中创建的 AccessKeyId，用于身份认证。
  * SecretKey	                String	-	        您在阿里云账号管理控制台中创建的 AccessKeySecret，用于身份认证。
  * OnsChannel	                String	ALIYUN 用户渠道，阿里云：ALIYUN，聚石塔用户为：CLOUD。
@@ -26,7 +25,6 @@ import lombok.Data;
  * ConsumeMessageBatchMaxSize	String	1	        BatchConsumer每次批量消费的最大消息数量，默认值为1，允许自定义范围为[1, 32]，实际消费数量可能小于该值。
  * CheckImmunityTimeInSeconds	String	30	        设置事务消息第一次回查的最快时间，单位：秒（s）。
  * suspendTimeMillis	        String	3000        只适用于顺序消息，设置消息消费失败的重试间隔时间，单位：毫秒（ms）。
- * </p>
  */
 @ConfigurationProperties(prefix = AliyunOnsMqProperties.PREFIX)
 @Data
