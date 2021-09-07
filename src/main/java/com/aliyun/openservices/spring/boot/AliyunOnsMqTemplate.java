@@ -27,10 +27,12 @@ import com.aliyun.openservices.ons.api.OnExceptionContext;
 import com.aliyun.openservices.ons.api.Producer;
 import com.aliyun.openservices.ons.api.SendCallback;
 import com.aliyun.openservices.ons.api.SendResult;
+import com.aliyun.openservices.ons.api.batch.BatchMessageListener;
 import com.aliyun.openservices.ons.api.bean.Subscription;
 import com.aliyun.openservices.ons.api.order.MessageOrderListener;
 import com.aliyun.openservices.ons.api.order.OrderProducer;
 import com.aliyun.openservices.shade.com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.aliyun.openservices.spring.boot.annotation.BatchMessageConsumer;
 import com.aliyun.openservices.spring.boot.annotation.MessageConsumer;
 import com.aliyun.openservices.spring.boot.annotation.MessageOrderConsumer;
 
@@ -122,7 +124,46 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
-		return new HashMap<Subscription, MessageListener>();
+		return new HashMap<>();
+	}
+	
+	/*
+	 * 获取所有实现的批量消费者监听
+	 * @return subscriptionTable
+	 * @throws BeansException
+	 */
+	public Map<Subscription, BatchMessageListener> getBatchSubscriptionTable(String... arg) throws BeansException {
+		try {
+			String[] messageConsumerBeans = getApplicationContext().getBeanNamesForAnnotation(BatchMessageConsumer.class);
+			Map<Subscription, BatchMessageListener> subscriptionTable = new HashMap<>(messageConsumerBeans.length);
+			Subscription subscription;
+			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
+			for (String beanName : messageConsumerBeans) {
+				
+				// 没有指定具体名称或在指定名称内
+				if ( CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
+					
+					Class<?> clazz = applicationContext.getType(beanName);
+					BatchMessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, BatchMessageConsumer.class);
+					
+					// 绑定监听的topic
+					subscription = new Subscription();
+					subscription.setTopic(messageConsumer.topic());
+					// 绑定要监听的tag，多个tag用 || 隔开
+					subscription.setExpression(messageConsumer.subExpression());
+
+					subscriptionTable.put(subscription, (BatchMessageListener) applicationContext.getBean(beanName));
+					log.info("Topic[{}] and subExpression[{}] subscribed!", messageConsumer.topic(), messageConsumer.subExpression());
+
+				}
+				
+			}
+			log.info("Subscription Table : {}!", subscriptionTable);
+			return subscriptionTable;
+		} catch (Exception e) {
+			log.error(e.getMessage());
+		}
+		return new HashMap<>();
 	}
 
 	/*
@@ -164,7 +205,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
-		return new HashMap<Subscription, MessageOrderListener>();
+		return new HashMap<>();
 	}
 	
 	/*
