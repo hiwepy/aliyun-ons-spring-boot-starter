@@ -1,17 +1,15 @@
 package com.aliyun.openservices.spring.boot;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.aliyun.openservices.ons.api.Message;
 import com.aliyun.openservices.ons.api.order.ConsumeOrderContext;
 import com.aliyun.openservices.ons.api.order.MessageOrderListener;
 import com.aliyun.openservices.ons.api.order.OrderAction;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public abstract class AbstractMessageOrderListener implements MessageOrderListener {
 
-    private final Logger log = LoggerFactory.getLogger(AbstractMessageOrderListener.class);
-	
     @Override
     public OrderAction consume(Message message, ConsumeOrderContext context) {
         log.info("MessageOrderListener start msgKey:{},topic:{},body：{}", message.getKey(), message.getTopic(), new String(message.getBody()));
