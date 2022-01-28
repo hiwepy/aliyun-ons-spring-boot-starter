@@ -9,7 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class AbstractMessageListener implements MessageListener {
-	
+
+    public String expression(){
+        return null;
+    }
+
     @Override
     public Action consume(Message message, ConsumeContext context) {
         log.info("MessageListener start msgKey:{},topic:{},body：{}", message.getKey(), message.getTopic(), new String(message.getBody()));
@@ -27,9 +31,9 @@ public abstract class AbstractMessageListener implements MessageListener {
             return Action.ReconsumeLater;
         }
     }
-    
+
     public abstract int apply(Message message);
-    
+
     public abstract void consume(int count, Message message) throws Exception;
-    
+
 }

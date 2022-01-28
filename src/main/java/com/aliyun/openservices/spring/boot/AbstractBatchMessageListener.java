@@ -11,10 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class AbstractBatchMessageListener implements BatchMessageListener {
-	
+
+    public String expression(){
+        return null;
+    }
+
     @Override
     public Action consume(List<Message> messages, ConsumeContext context) {
-    	
+
     	for (Message message : messages) {
     		log.info("BatchMessageListener start msgKey:{},topic:{},body：{}", message.getKey(), message.getTopic(), new String(message.getBody()));
             int count = this.apply(message);
@@ -29,12 +33,12 @@ public abstract class AbstractBatchMessageListener implements BatchMessageListen
                 return Action.ReconsumeLater; // 稍后重新消费
             }
 		}
-    	
+
     	return Action.CommitMessage;
     }
-    
+
     public abstract int apply(Message message);
-    
+
     public abstract void consume(int count, Message message, ConsumeContext context) throws Exception;
-    
+
 }

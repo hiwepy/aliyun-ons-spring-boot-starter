@@ -10,6 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractMessageOrderListener implements MessageOrderListener {
 
+    public String expression(){
+        return null;
+    }
+
     @Override
     public OrderAction consume(Message message, ConsumeOrderContext context) {
         log.info("MessageOrderListener start msgKey:{},topic:{},body：{}", message.getKey(), message.getTopic(), new String(message.getBody()));
@@ -29,8 +33,8 @@ public abstract class AbstractMessageOrderListener implements MessageOrderListen
     }
 
     public abstract int apply(Message message);
-    
+
     public abstract void consume(int count, Message message) throws Exception;
-    
+
 
 }

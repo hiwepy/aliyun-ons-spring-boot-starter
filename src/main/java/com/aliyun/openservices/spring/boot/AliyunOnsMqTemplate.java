@@ -37,19 +37,20 @@ import com.aliyun.openservices.spring.boot.annotation.MessageConsumer;
 import com.aliyun.openservices.spring.boot.annotation.MessageOrderConsumer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
- 
+
 	/*
 	 * 上下文对象实例
 	 */
 	private ConfigurableListableBeanFactory applicationContext;
-	
+
 	private static ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("ons-pool-%d").build();
 
 	private CompletionService<String> completionThreadPool;
-	
+
 	public AliyunOnsMqTemplate(AliyunOnsMqPoolProperties poolProperties) {
 
 		/**
@@ -76,7 +77,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		this.applicationContext = beanFactory;
-		
+
 	}
 
 	/*
@@ -87,7 +88,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	public ConfigurableListableBeanFactory getApplicationContext() {
 		return applicationContext;
 	}
-	
+
 	/*
 	 * 获取所有实现的消费者监听
 	 * @return subscriptionTable
@@ -100,10 +101,10 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			Subscription subscription;
 			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
-				
+
 				// 没有指定具体名称或在指定名称内
 				if ( CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
-					
+
 					Class<?> clazz = applicationContext.getType(beanName);
 					MessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, MessageConsumer.class);
 
@@ -113,11 +114,21 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 					// 绑定要监听的tag，多个tag用 || 隔开
 					subscription.setExpression(messageConsumer.tag());
 
-					subscriptionTable.put(subscription, (MessageListener) applicationContext.getBean(beanName));
+					// 扩展接口
+					Object messageListener = applicationContext.getBean(beanName);
+					if(messageListener instanceof AbstractMessageListener){
+						AbstractMessageListener aMessageListener = (AbstractMessageListener) messageListener;
+						String expression = aMessageListener.expression();
+						if(StringUtils.hasText(expression)){
+							subscription.setExpression(expression);
+						}
+					}
+
+					subscriptionTable.put(subscription, (MessageListener) messageListener);
 					log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
 
 				}
-				
+
 			}
 			log.info("Subscription Table : {}!", subscriptionTable);
 			return subscriptionTable;
@@ -126,7 +137,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 		return new HashMap<>();
 	}
-	
+
 	/*
 	 * 获取所有实现的批量消费者监听
 	 * @return subscriptionTable
@@ -139,24 +150,32 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			Subscription subscription;
 			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
-				
+
 				// 没有指定具体名称或在指定名称内
 				if ( CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
-					
+
 					Class<?> clazz = applicationContext.getType(beanName);
 					BatchMessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, BatchMessageConsumer.class);
-					
+
 					// 绑定监听的topic
 					subscription = new Subscription();
 					subscription.setTopic(messageConsumer.topic());
 					// 绑定要监听的tag，多个tag用 || 隔开
 					subscription.setExpression(messageConsumer.subExpression());
-
-					subscriptionTable.put(subscription, (BatchMessageListener) applicationContext.getBean(beanName));
+					// 扩展接口
+					Object messageListener = applicationContext.getBean(beanName);
+					if(messageListener instanceof AbstractBatchMessageListener){
+						AbstractBatchMessageListener batchMessageListener = (AbstractBatchMessageListener) messageListener;
+						String expression = batchMessageListener.expression();
+						if(StringUtils.hasText(expression)){
+							subscription.setExpression(expression);
+						}
+					}
+					subscriptionTable.put(subscription, (BatchMessageListener) messageListener);
 					log.info("Topic[{}] and subExpression[{}] subscribed!", messageConsumer.topic(), messageConsumer.subExpression());
 
 				}
-				
+
 			}
 			log.info("Subscription Table : {}!", subscriptionTable);
 			return subscriptionTable;
@@ -172,31 +191,38 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	 */
 	public Map<Subscription, MessageOrderListener> getOrderSubscriptionTable(String... arg) throws BeansException {
 		try {
-			
+
 			String[] messageConsumerBeans = getApplicationContext().getBeanNamesForAnnotation(MessageOrderConsumer.class);
 			Map<Subscription, MessageOrderListener> subscriptionTable = new HashMap<>(messageConsumerBeans.length);
 			Subscription subscription;
 			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
-				
+
 				// 没有指定具体名称或在指定名称内
 				if (CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
-					
-					Class<?> clazz = applicationContext.getType(beanName);
-					MessageOrderConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz,
-							MessageOrderConsumer.class);
 
-					
-					
+					Class<?> clazz = applicationContext.getType(beanName);
+					MessageOrderConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, MessageOrderConsumer.class);
+
 					// 绑定监听的topic
 					subscription = new Subscription();
 					subscription.setTopic(messageConsumer.topic());
 					// 绑定要监听的tag，多个tag用 || 隔开
 					subscription.setExpression(messageConsumer.tag());
 
-					subscriptionTable.put(subscription, (MessageOrderListener) applicationContext.getBean(beanName));
+					// 扩展接口
+					Object messageListener = applicationContext.getBean(beanName);
+					if(messageListener instanceof AbstractMessageOrderListener){
+						AbstractMessageOrderListener messageOrderListener = (AbstractMessageOrderListener) messageListener;
+						String expression = messageOrderListener.expression();
+						if(StringUtils.hasText(expression)){
+							subscription.setExpression(expression);
+						}
+					}
+
+					subscriptionTable.put(subscription, (MessageOrderListener) messageListener);
 					log.info("Topic[{}] and tag[{}] subscribed!", messageConsumer.topic(), messageConsumer.tag());
-					
+
 				}
 
 			}
@@ -207,10 +233,10 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 		return new HashMap<>();
 	}
-	
+
 	/*
 	 * 单条发送顺序消息
-	 * 
+	 *
 	 * @param producer
 	 * @param message     消息
 	 * @param shardingKey 顺序消息选择因子
@@ -232,7 +258,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	/*
 	 * 同步发送消息
-	 * 
+	 *
 	 * @param producer
 	 * @param message
 	 * @return
@@ -285,7 +311,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	/*
 	 * 异步发送消息
-	 * 
+	 *
 	 * @param producer
 	 * @param message
 	 * @param sendCallback 回调
@@ -319,7 +345,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	/*
 	 * 单向发送
-	 * 
+	 *
 	 * @param producer
 	 * @param message
 	 * @return
@@ -339,7 +365,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	/*
 	 * 多线程发送消息
-	 * 
+	 *
 	 * @param producer
 	 * @param message
 	 */
@@ -351,7 +377,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 				if (sendResult != null) {
 					log.info(" Send mq message success. Topic is:" + message.getTopic() + " msgId is: "
 							+ sendResult.getMessageId());
-					
+
 					return sendResult.getMessageId();
 				}
 			} catch (Exception e) {
@@ -364,7 +390,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	/*
 	 * 发送延时消息（延时执行）
-	 * 
+	 *
 	 * @param producer
 	 * @param message
 	 * @param delayTime 延迟时间
@@ -388,7 +414,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	/*
 	 * 发送定时消息
-	 * 
+	 *
 	 * @param producer
 	 * @param message
 	 * @param date
