@@ -14,9 +14,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.aliyun.openservices.shade.org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -50,6 +52,20 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	private static ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("ons-pool-%d").build();
 
 	private CompletionService<String> completionThreadPool;
+
+	private static SendCallback SEND_CALLBACK = new SendCallback() {
+
+		@Override
+		public void onSuccess(SendResult sendResult) {
+			// 在 callback 返回之前即可取得 msgId。
+			log.info("send message async successful. topic={}, msgId={}", sendResult.getTopic() , sendResult.getMessageId());
+		}
+
+		@Override
+		public void onException(OnExceptionContext context) {
+			log.error("send message async failed. topic={},msgId={}, error: {}" , context.getTopic(), context.getMessageId(), ExceptionUtils.getMessage(context.getException()));
+		}
+	};
 
 	public AliyunOnsMqTemplate(AliyunOnsMqPoolProperties poolProperties) {
 
@@ -135,7 +151,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
-		return new HashMap<>();
+		return new HashMap<>(0);
 	}
 
 	/*
@@ -231,7 +247,7 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
-		return new HashMap<>();
+		return new HashMap<>(0);
 	}
 
 	/*
@@ -284,23 +300,9 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	 * @param msg
 	 * @return
 	 */
-	public boolean sendSyncMessage(Producer producer, Message message) {
+	public boolean sendAsyncMes(Producer producer, Message message) {
 		try {
-			producer.sendAsync(message, new SendCallback() {
-				@Override
-				public void onSuccess(final SendResult sendResult) {
-					// 消费发送成功
-					log.info(" Send mq message success. Topic is:" + sendResult.getTopic() + " msgId is: "
-							+ sendResult.getMessageId());
-				}
-
-				@Override
-				public void onException(OnExceptionContext context) {
-					// 消息发送失败，需要进行重试处理，可重新发送这条消息或持久化这条数据进行补偿处理
-					log.error(" Send mq message failed. Topic is:" + context.getTopic());
-					;
-				}
-			});
+			producer.sendAsync(message, SEND_CALLBACK);
 			log.info("send message async. topic=" + message.getTopic() + ", msgId=" + message.getMsgID());
 			return true;
 		} catch (Exception e) {
@@ -324,23 +326,6 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		} catch (Exception e) {
 			log.error(" Send mq message failed. Topic is: {}, msgId: {}, error : {}", message.getTopic(), message.getMsgID(), e.getMessage());
 		}
-	}
-
-	public void sendAsyncMes(Producer producer, Message message) {
-		producer.sendAsync(message, new SendCallback() {
-			@Override
-			public void onSuccess(SendResult sendResult) {
-				// 在 callback 返回之前即可取得 msgId。
-				log.info(
-						"send message async successful. topic=" + message.getTopic() + ", msgId=" + message.getMsgID());
-			}
-
-			@Override
-			public void onException(OnExceptionContext context) {
-				log.error("send message async failed. topic=" + message.getTopic() + ", msgId=" + message.getMsgID());
-			}
-		});
-
 	}
 
 	/*
