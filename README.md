@@ -12,7 +12,7 @@
 <dependency>
 	<groupId>com.github.hiwepy</groupId>
 	<artifactId>aliyun-ons-spring-boot-starter</artifactId>
-	<version>1.1.1.RELEASE</version>
+	<version>2.0.0.RELEASE</version>
 </dependency>
 ```
 
