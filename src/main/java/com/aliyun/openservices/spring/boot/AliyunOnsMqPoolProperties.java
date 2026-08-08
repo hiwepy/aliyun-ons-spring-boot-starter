@@ -7,11 +7,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import lombok.Data;
 
 /**
- * ons 多线程发送配置参数
- * corePoolSize    线程池核心池的大小
- * maximumPoolSize 线程池中允许的最大线程数量
- * keepAliveTime   当线程数大于核心时，此为终止前多余的空闲线程等待新任务的最长时间
- * unit            keepAliveTime 的时间单位
+ * Thread-pool properties used by {@link AliyunOnsMqTemplate} for multi-threaded message sending.
+ * <ul>
+ *   <li>{@code corePoolSize} - the core pool size</li>
+ *   <li>{@code maximumPoolSize} - the maximum number of threads allowed in the pool</li>
+ *   <li>{@code keepAliveTime} - the maximum time idle threads wait for new tasks before terminating</li>
+ *   <li>{@code unit} - the time unit of {@code keepAliveTime}</li>
+ * </ul>
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ * @since 1.0.0
  */
 @ConfigurationProperties(prefix = AliyunOnsMqPoolProperties.PREFIX)
 @Data
@@ -22,25 +27,15 @@ public class AliyunOnsMqPoolProperties {
      */
     public static final String PREFIX = "alibaba.cloud.ons.pool";
 
-	/**
-	 * corePoolSize    线程池核心池的大小
-	 */
+	/** Core pool size. Defaults to the number of available processors. */
 	private Integer corePoolSize = Runtime.getRuntime().availableProcessors();
-	/**
-	 * maximumPoolSize 线程池中允许的最大线程数量
-	 */
+	/** Maximum number of threads allowed in the pool. Defaults to twice the core size. */
 	private Integer maximumPoolSize = corePoolSize * 2;
-	/**
-	 * keepAliveTime   当线程数大于核心时，此为终止前多余的空闲线程等待新任务的最长时间
-	 */
+	/** Maximum time idle threads wait for new tasks before terminating. */
 	private Long keepAliveTime = 0L;
-	/**
-	 * unit            keepAliveTime 的时间单位
-	 */
+	/** Time unit of {@link #keepAliveTime}. */
 	private TimeUnit unit = TimeUnit.MILLISECONDS;
-	/**
-	 * maximumWorkQueue 线程池中允许的最大等待执行任务数
-	 */
+	/** Maximum number of tasks queued before they are executed. */
 	private Integer maximumWorkQueue = 1024;
 
 }

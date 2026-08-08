@@ -4,6 +4,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Data;
 
+/**
+ * Shared Alibaba Cloud account configuration properties used as credentials fallback.
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ * @since 1.0.0
+ */
 @ConfigurationProperties(prefix = AliyunProperties.PREFIX)
 @Data
 public class AliyunProperties {
@@ -12,14 +18,10 @@ public class AliyunProperties {
      * The prefix of the property of {@link AliyunProperties}.
      */
     public static final String PREFIX = "alibaba.cloud";
-    
-	/**
-	 * AccessKey, 用于标识、校验用户身份
-	 */
+
+	/** AccessKey id used to identify and authenticate the user. */
 	private String accessKey;
-	/**
-	 * SecretKey, 用于标识、校验用户身份
-	 */
+	/** AccessKey secret used to identify and authenticate the user. */
 	private String secretKey;
 
 }

@@ -7,19 +7,32 @@ import com.aliyun.openservices.ons.api.MessageListener;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Base implementation of a {@link MessageListener} with idempotency support.
+ * <p>Subclasses implement {@link #apply(Message)} (to record/track the message and return the
+ * number of times it has already been consumed) and {@link #consume(int, Message)}
+ * (the actual business logic). Messages already consumed are acknowledged immediately.</p>
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ * @since 1.0.0
+ */
 @Slf4j
 public abstract class AbstractMessageListener implements MessageListener {
 
+    /**
+     * Optional subscription expression (tag filter) that overrides the annotation default.
+     * @return the subscription expression, or {@code null} to use the default
+     */
     public String expression(){
         return null;
     }
 
     @Override
     public Action consume(Message message, ConsumeContext context) {
-        log.info("MessageListener start msgKey:{},topic:{},body：{}", message.getKey(), message.getTopic(), new String(message.getBody()));
+        log.info("MessageListener start msgKey:{},topic:{},body:{}", message.getKey(), message.getTopic(), new String(message.getBody()));
         int count = this.apply(message);
         if (count != 0) {
-            log.warn("MessageListener repeat consume  msgKey:{},topic:{},body：{}", message.getKey(), message.getTopic(), new String(message.getBody()));
+            log.warn("MessageListener repeat consume  msgKey:{},topic:{},body:{}", message.getKey(), message.getTopic(), new String(message.getBody()));
             return Action.CommitMessage;
         }
         try {
@@ -27,13 +40,24 @@ public abstract class AbstractMessageListener implements MessageListener {
             return Action.CommitMessage;
         } catch (Exception e) {
             log.error("consume error topic:{},msgKey:{}", message.getTopic(), message.getKey(), e);
-            //稍后重新消费
+            // Reconsume later
             return Action.ReconsumeLater;
         }
     }
 
+    /**
+     * Records the message and returns how many times it has been consumed so far.
+     * @param message the incoming message
+     * @return the consume count; non-zero means the message is a duplicate
+     */
     public abstract int apply(Message message);
 
+    /**
+     * Consumes a single message.
+     * @param count the consume count returned by {@link #apply(Message)}
+     * @param message the message to consume
+     * @throws Exception when consumption fails; the message will be reconsumed later
+     */
     public abstract void consume(int count, Message message) throws Exception;
 
 }

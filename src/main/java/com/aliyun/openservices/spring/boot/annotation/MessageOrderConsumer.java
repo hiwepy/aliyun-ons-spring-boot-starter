@@ -4,25 +4,22 @@ package com.aliyun.openservices.spring.boot.annotation;
 import java.lang.annotation.*;
 
 /**
- * 消费者监听注解
+ * Marks a bean as an ordered ONS message consumer.
+ * <p>Applied to {@link com.aliyun.openservices.spring.boot.AbstractMessageOrderListener} subclasses;
+ * the topic and tag are used to build the ordered subscription table.</p>
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ * @since 1.0.0
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface MessageOrderConsumer {
 
-    /*
-     * topic
-     *
-     * @return
-     */
+    /** @return the topic to subscribe to */
     String topic();
 
-    /*
-     * tag
-     *
-     * @return
-     */
+    /** @return the tag filter; multiple tags are joined by {@code ||}. Defaults to {@code *} (all) */
     String tag() default "*";
 
 }

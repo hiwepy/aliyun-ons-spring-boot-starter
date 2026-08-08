@@ -22,23 +22,34 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * Helper template for sending Alibaba Cloud ONS messages and discovering annotated consumers.
+ * <p>Acts as a {@link BeanFactoryPostProcessor} to capture the bean factory, then exposes
+ * convenience methods for synchronous, asynchronous, one-way, ordered, delayed and timed
+ * message sending. It also scans for beans annotated with
+ * {@link MessageConsumer}/{@link BatchMessageConsumer}/{@link MessageOrderConsumer} to build
+ * the subscription tables.</p>
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ * @since 1.0.0
+ */
 @Slf4j
 public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
-	/*
-	 * 上下文对象实例
-	 */
+	/** The captured bean factory (application context). */
 	private ConfigurableListableBeanFactory applicationContext;
 
 	private static ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("ons-pool-%d").build();
 
+	/** Completion-based thread pool used for multi-threaded sending. */
 	private CompletionService<String> completionThreadPool;
 
+	/** Default callback used for asynchronous sends without an explicit callback. */
 	private static SendCallback SEND_CALLBACK = new SendCallback() {
 
 		@Override
 		public void onSuccess(SendResult sendResult) {
-			// 在 callback 返回之前即可取得 msgId。
+			// The msgId is available before the callback returns.
 			log.info("send message async successful. topic={}, msgId={}", sendResult.getTopic() , sendResult.getMessageId());
 		}
 
@@ -48,17 +59,22 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 	};
 
+	/**
+	 * Creates the template and initialises its internal thread pool.
+	 * <p>Pool parameters (with their meaning):
+	 * <ul>
+	 *   <li>{@code corePoolSize} - core pool size</li>
+	 *   <li>{@code maximumPoolSize} - maximum number of threads allowed in the pool</li>
+	 *   <li>{@code keepAliveTime} - maximum time idle threads wait for new tasks before terminating</li>
+	 *   <li>{@code unit} - time unit of {@code keepAliveTime}</li>
+	 *   <li>{@code workQueue} - queue holding tasks waiting to execute</li>
+	 *   <li>{@code threadFactory} - factory used to create new threads</li>
+	 *   <li>{@code handler} - rejection policy applied when the pool is full and the queue is saturated</li>
+	 * </ul>
+	 * @param poolProperties the thread-pool configuration
+	 */
 	public AliyunOnsMqTemplate(AliyunOnsMqPoolProperties poolProperties) {
 
-		/**
-		 * corePoolSize    线程池核心池的大小
-		 * maximumPoolSize 线程池中允许的最大线程数量
-		 * keepAliveTime   当线程数大于核心时，此为终止前多余的空闲线程等待新任务的最长时间
-		 * unit            keepAliveTime 的时间单位
-		 * workQueue       用来储存等待执行任务的队列
-		 * threadFactory   创建线程的工厂类
-		 * handler         拒绝策略类,当线程池数量达到上线并且workQueue队列长度达到上限时就需要对到来的任务做拒绝处理
-		 */
 		ExecutorService threadPool = new ThreadPoolExecutor(
 				poolProperties.getCorePoolSize(),
 				poolProperties.getMaximumPoolSize(),
@@ -77,19 +93,19 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 
 	}
 
-	/*
-	 * 获取applicationContext
-	 *
-	 * @return
+	/**
+	 * Returns the captured bean factory.
+	 * @return the application context
 	 */
 	public ConfigurableListableBeanFactory getApplicationContext() {
 		return applicationContext;
 	}
 
-	/*
-	 * 获取所有实现的消费者监听
-	 * @return subscriptionTable
-	 * @throws BeansException
+	/**
+	 * Builds the subscription table for all {@link MessageConsumer}-annotated beans.
+	 * @param arg optional bean-name filter; when empty all consumer beans are included
+	 * @return the subscription table
+	 * @throws BeansException when bean resolution fails
 	 */
 	public Map<Subscription, MessageListener> getSubscriptionTable(String... arg) throws BeansException {
 		try {
@@ -99,19 +115,19 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
 
-				// 没有指定具体名称或在指定名称内
+				// Include when no filter is given or the bean name matches the filter.
 				if ( CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
 
 					Class<?> clazz = applicationContext.getType(beanName);
 					MessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, MessageConsumer.class);
 
-					// 绑定监听的topic
+					// Bind the topic to listen on.
 					subscription = new Subscription();
 					subscription.setTopic(messageConsumer.topic());
-					// 绑定要监听的tag，多个tag用 || 隔开
+					// Bind the tag filter; multiple tags are joined by ||.
 					subscription.setExpression(messageConsumer.tag());
 
-					// 扩展接口
+					// Extension hook.
 					Object messageListener = applicationContext.getBean(beanName);
 					if(messageListener instanceof AbstractMessageListener){
 						AbstractMessageListener aMessageListener = (AbstractMessageListener) messageListener;
@@ -135,10 +151,11 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		return new HashMap<>(0);
 	}
 
-	/*
-	 * 获取所有实现的批量消费者监听
-	 * @return subscriptionTable
-	 * @throws BeansException
+	/**
+	 * Builds the subscription table for all {@link BatchMessageConsumer}-annotated beans.
+	 * @param arg optional bean-name filter; when empty all consumer beans are included
+	 * @return the subscription table
+	 * @throws BeansException when bean resolution fails
 	 */
 	public Map<Subscription, BatchMessageListener> getBatchSubscriptionTable(String... arg) throws BeansException {
 		try {
@@ -148,18 +165,18 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
 
-				// 没有指定具体名称或在指定名称内
+				// Include when no filter is given or the bean name matches the filter.
 				if ( CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
 
 					Class<?> clazz = applicationContext.getType(beanName);
 					BatchMessageConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, BatchMessageConsumer.class);
 
-					// 绑定监听的topic
+					// Bind the topic to listen on.
 					subscription = new Subscription();
 					subscription.setTopic(messageConsumer.topic());
-					// 绑定要监听的tag，多个tag用 || 隔开
+					// Bind the tag filter; multiple tags are joined by ||.
 					subscription.setExpression(messageConsumer.subExpression());
-					// 扩展接口
+					// Extension hook.
 					Object messageListener = applicationContext.getBean(beanName);
 					if(messageListener instanceof AbstractBatchMessageListener){
 						AbstractBatchMessageListener batchMessageListener = (AbstractBatchMessageListener) messageListener;
@@ -182,9 +199,11 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		return new HashMap<>();
 	}
 
-	/*
-	 *  获取所有实现的顺序消费者监听
-	 * @return {@link java.util.Map<com.aliyun.openservices.ons.api.bean.Subscription,com.aliyun.openservices.ons.api.order.MessageOrderListener>}
+	/**
+	 * Builds the subscription table for all {@link MessageOrderConsumer}-annotated beans.
+	 * @param arg optional bean-name filter; when empty all consumer beans are included
+	 * @return the ordered subscription table
+	 * @throws BeansException when bean resolution fails
 	 */
 	public Map<Subscription, MessageOrderListener> getOrderSubscriptionTable(String... arg) throws BeansException {
 		try {
@@ -195,19 +214,19 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 			List<String> beanNames = Objects.isNull(arg) ? new ArrayList<String>() : Arrays.asList(arg);
 			for (String beanName : messageConsumerBeans) {
 
-				// 没有指定具体名称或在指定名称内
+				// Include when no filter is given or the bean name matches the filter.
 				if (CollectionUtils.isEmpty(beanNames) || beanNames.contains(beanName)) {
 
 					Class<?> clazz = applicationContext.getType(beanName);
 					MessageOrderConsumer messageConsumer = AnnotationUtils.findAnnotation(clazz, MessageOrderConsumer.class);
 
-					// 绑定监听的topic
+					// Bind the topic to listen on.
 					subscription = new Subscription();
 					subscription.setTopic(messageConsumer.topic());
-					// 绑定要监听的tag，多个tag用 || 隔开
+					// Bind the tag filter; multiple tags are joined by ||.
 					subscription.setExpression(messageConsumer.tag());
 
-					// 扩展接口
+					// Extension hook.
 					Object messageListener = applicationContext.getBean(beanName);
 					if(messageListener instanceof AbstractMessageOrderListener){
 						AbstractMessageOrderListener messageOrderListener = (AbstractMessageOrderListener) messageListener;
@@ -231,16 +250,15 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		return new HashMap<>(0);
 	}
 
-	/*
-	 * 单条发送顺序消息
-	 *
-	 * @param producer
-	 * @param message     消息
-	 * @param shardingKey 顺序消息选择因子
-	 * @return
+	/**
+	 * Sends a single ordered message.
+	 * @param producer the order producer
+	 * @param message the message to send
+	 * @param shardingKey the sharding key used to select the ordered queue
+	 * @return {@code true} when the message is sent successfully
 	 */
 	public boolean sendOrderMes(OrderProducer producer, Message message, String shardingKey) {
-		// 发信息必须给一个唯一标识key用于做幂等
+		// A unique key is required for idempotency.
 		Assert.hasText(message.getKey(), "message key must not be empty ");
 		try {
 			SendResult sendResult = producer.send(message, shardingKey);
@@ -253,15 +271,14 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 	}
 
-	/*
-	 * 同步发送消息
-	 *
-	 * @param producer
-	 * @param message
-	 * @return
+	/**
+	 * Sends a message synchronously.
+	 * @param producer the producer
+	 * @param message the message to send
+	 * @return {@code true} when the message is sent successfully
 	 */
 	public boolean sendSyncMes(Producer producer, Message message) {
-		// 发信息必须给一个唯一标识key用于做幂等
+		// A unique key is required for idempotency.
 		Assert.hasText(message.getKey(), "message key must not be empty ");
 		try {
 			SendResult sendResult = producer.send(message);
@@ -274,12 +291,11 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 	}
 
-	/*
-	 * 异步发送消息
-	 *
-	 * @param producer
-	 * @param msg
-	 * @return
+	/**
+	 * Sends a message asynchronously using the default callback.
+	 * @param producer the producer
+	 * @param message the message to send
+	 * @return {@code true} when the send is accepted
 	 */
 	public boolean sendAsyncMes(Producer producer, Message message) {
 		try {
@@ -292,34 +308,32 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 	}
 
-	/*
-	 * 异步发送消息
-	 *
-	 * @param producer
-	 * @param message
-	 * @param sendCallback 回调
+	/**
+	 * Sends a message asynchronously with a custom callback.
+	 * @param producer the producer
+	 * @param message the message to send
+	 * @param sendCallback the callback invoked on success or failure
 	 */
 	public void sendAsyncMes(Producer producer, Message message, SendCallback sendCallback) {
 		try {
 			producer.sendAsync(message, sendCallback);
-			// 在 callback 返回之前即可取得 msgId。
+			// The msgId is available before the callback returns.
 			log.info("send message async. topic=" + message.getTopic() + ", msgId=" + message.getMsgID());
 		} catch (Exception e) {
 			log.error(" Send mq message failed. Topic is: {}, msgId: {}, error : {}", message.getTopic(), message.getMsgID(), e.getMessage());
 		}
 	}
 
-	/*
-	 * 单向发送
-	 *
-	 * @param producer
-	 * @param message
-	 * @return
+	/**
+	 * Sends a message one-way (no acknowledgement).
+	 * <p>Because one-way sending has no request/response, a send failure is not retried and the
+	 * message may be lost. For data that must not be lost use the reliable sync or async methods.</p>
+	 * @param producer the producer
+	 * @param message the message to send
+	 * @return {@code true} when the message is accepted by the producer
 	 */
 	public boolean sendOneWayMes(Producer producer, Message message) {
 		try {
-			// 由于在 oneway
-			// 方式发送消息时没有请求应答处理，一旦出现消息发送失败，则会因为没有重试而导致数据丢失。若数据不可丢，建议选用可靠同步或可靠异步发送方式。
 			producer.sendOneway(message);
 			log.info(" Send mq message success. Topic is:" + message.getTopic());
 			return true;
@@ -329,17 +343,16 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 	}
 
-	/*
-	 * 多线程发送消息
-	 *
-	 * @param producer
-	 * @param message
+	/**
+	 * Sends a message using the internal thread pool.
+	 * @param producer the producer
+	 * @param message the message to send
 	 */
 	public void sendMultiMes(final Producer producer, final Message message) {
 		completionThreadPool.submit(() -> {
 			try {
 				SendResult sendResult = producer.send(message);
-				// 同步发送消息，只要不抛异常就是成功
+				// A synchronous send is successful when no exception is thrown.
 				if (sendResult != null) {
 					log.info(" Send mq message success. Topic is:" + message.getTopic() + " msgId is: "
 							+ sendResult.getMessageId());
@@ -347,23 +360,22 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 					return sendResult.getMessageId();
 				}
 			} catch (Exception e) {
-				// 消息发送失败，需要进行重试处理，可重新发送这条消息或持久化这条数据进行补偿处理
+				// On send failure you should retry or persist the message for compensation.
 				log.error(" Send mq message failed. Topic is: {}, msgId: {}, error : {}", message.getTopic(), message.getMsgID(), e.getMessage());
 			}
 			return "";
 		});
 	}
 
-	/*
-	 * 发送延时消息（延时执行）
-	 *
-	 * @param producer
-	 * @param message
-	 * @param delayTime 延迟时间
-	 * @return
+	/**
+	 * Sends a delayed message that will be delivered after {@code delayTime} milliseconds.
+	 * @param producer the producer
+	 * @param message the message to send
+	 * @param delayTime the delay before delivery, in milliseconds
+	 * @return {@code true} when the message is sent successfully
 	 */
 	public boolean sendDelayMes(Producer producer, Message message, long delayTime) {
-		// 发信息必须给一个唯一标识key用于做幂等
+		// A unique key is required for idempotency.
 		Assert.hasText(message.getKey(), "message key must not be empty ");
 		try {
 			long executeTime = System.currentTimeMillis() + delayTime;
@@ -378,13 +390,12 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 		}
 	}
 
-	/*
-	 * 发送定时消息
-	 *
-	 * @param producer
-	 * @param message
-	 * @param date
-	 * @return
+	/**
+	 * Sends a timed message that will be delivered at the given date/time.
+	 * @param producer the producer
+	 * @param message the message to send
+	 * @param date the scheduled delivery time
+	 * @return {@code true} when the message is sent successfully
 	 */
 	public boolean sendTimingMes(Producer producer, Message message, Date date) {
 		try {
