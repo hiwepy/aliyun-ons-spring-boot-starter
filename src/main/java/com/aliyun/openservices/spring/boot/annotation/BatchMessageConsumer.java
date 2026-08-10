@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * <p>Applied to {@link com.aliyun.openservices.spring.boot.AbstractBatchMessageListener} subclasses;
  * the topic and sub-expression are used to build the subscription table.</p>
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @since 1.0.0
  */
 @Documented

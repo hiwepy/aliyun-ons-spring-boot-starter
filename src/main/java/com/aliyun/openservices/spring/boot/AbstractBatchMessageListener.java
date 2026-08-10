@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  * number of times it has already been consumed) and {@link #consume(int, Message, ConsumeContext)}
  * (the actual business logic). Messages already consumed are skipped.</p>
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @since 1.0.0
  */
 @Slf4j

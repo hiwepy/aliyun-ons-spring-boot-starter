@@ -16,7 +16,7 @@ import com.aliyun.openservices.ons.api.order.OrderProducer;
  * Spring Boot auto-configuration for Alibaba Cloud ONS (Message Queue for RocketMQ).
  * <p>Registers the order producer, regular producer and the {@link AliyunOnsMqTemplate} helper.</p>
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @since 1.0.0
  */
 @Configuration

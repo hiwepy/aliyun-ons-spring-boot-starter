@@ -29,7 +29,7 @@ import lombok.Data;
  *   <li>suspendTimeMillis - Retry interval for failed ordered-message consumption (milliseconds).</li>
  * </ul>
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = AliyunOnsMqProperties.PREFIX)
