@@ -48,12 +48,22 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	private static SendCallback SEND_CALLBACK = new SendCallback() {
 
 		@Override
+		/**
+		 * on Success.
+		 *
+		 * @param sendResult the send result
+		 */
 		public void onSuccess(SendResult sendResult) {
 			// The msgId is available before the callback returns.
 			log.info("send message async successful. topic={}, msgId={}", sendResult.getTopic() , sendResult.getMessageId());
 		}
 
 		@Override
+		/**
+		 * on Exception.
+		 *
+		 * @param context the context
+		 */
 		public void onException(OnExceptionContext context) {
 			log.error("send message async failed. topic={},msgId={}, error: {}" , context.getTopic(), context.getMessageId(), ExceptionUtils.getMessage(context.getException()));
 		}
@@ -88,6 +98,12 @@ public class AliyunOnsMqTemplate implements BeanFactoryPostProcessor {
 	}
 
 	@Override
+	/**
+	 * post Process Bean Factory.
+	 *
+	 * @param beanFactory the bean factory
+	 * @throws BeansException if an error occurs
+	 */
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		this.applicationContext = beanFactory;
 

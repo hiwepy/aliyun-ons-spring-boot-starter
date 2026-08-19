@@ -28,6 +28,13 @@ public abstract class AbstractMessageListener implements MessageListener {
     }
 
     @Override
+    /**
+     * consume.
+     *
+     * @param message the message
+     * @param context the context
+     * @return the result
+     */
     public Action consume(Message message, ConsumeContext context) {
         log.info("MessageListener start msgKey:{},topic:{},body:{}", message.getKey(), message.getTopic(), new String(message.getBody()));
         int count = this.apply(message);

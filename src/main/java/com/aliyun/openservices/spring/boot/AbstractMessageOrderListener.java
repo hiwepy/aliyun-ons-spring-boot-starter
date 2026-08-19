@@ -29,6 +29,13 @@ public abstract class AbstractMessageOrderListener implements MessageOrderListen
     }
 
     @Override
+    /**
+     * consume.
+     *
+     * @param message the message
+     * @param context the context
+     * @return the result
+     */
     public OrderAction consume(Message message, ConsumeOrderContext context) {
         log.info("MessageOrderListener start msgKey:{},topic:{},body:{}", message.getKey(), message.getTopic(), new String(message.getBody()));
         int count = this.apply(message);

@@ -30,6 +30,13 @@ public abstract class AbstractBatchMessageListener implements BatchMessageListen
     }
 
     @Override
+    /**
+     * consume.
+     *
+     * @param messages the messages
+     * @param context the context
+     * @return the result
+     */
     public Action consume(List<Message> messages, ConsumeContext context) {
 
     	for (Message message : messages) {
